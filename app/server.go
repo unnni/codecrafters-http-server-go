@@ -4,9 +4,18 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	// Uncomment this block to pass the first stage
 )
 
+func sendResponse(response string, conn net.Conn) {
+	writeBuffer := []byte("HTTP/1.1 200 OK\r\n\r\n")
+	_, err := conn.Write(writeBuffer)
+
+	if err != nil {
+		fmt.Println("Error writing data on connection", err.Error())
+	}
+}
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -23,15 +32,25 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	// writeBuffer := []byte("HTTP/1.1 200 OK\r\n\r\n")
-	// _, err = connection.Write(writeBuffer)
-	if err != nil {
-		fmt.Println("Error sending response", err.Error())
-		os.Exit(1)
-	}
 
 	var requestBuffer []byte
 	connection.Read(requestBuffer)
-	fmt.Printf(string(requestBuffer))
+	requestBufferString := string(requestBuffer)
+	requestBufferLines := strings.Split(requestBufferString, "\r\n")
+
+	if len(requestBufferLines) > 0 {
+		firstLine := requestBufferLines[0]
+		firstLineEl := strings.Split(firstLine, " ")
+		if len(firstLineEl) > 1 {
+			path := firstLineEl[1]
+			if path == "/" {
+				sendResponse("HTTP/1.1 200 OK\r\n\r\n", connection)
+			} else {
+				sendResponse("HTTP/1.1 404 Not Found\r\n\r\n", connection)
+			}
+			
+			}
+		}
+	}
 	defer connection.Close()
 }
