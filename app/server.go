@@ -36,19 +36,18 @@ func main() {
 	connection.Read(requestBuffer)
 	requestBufferString := string(requestBuffer)
 	requestBufferLines := strings.Split(requestBufferString, "\r\n")
+	startLine := requestBufferLines[0]
+	components := strings.Split(startLine, " ")
+	method := components[0]
+	path := components[1]
 
-	if len(requestBufferLines) > 0 {
-		firstLine := requestBufferLines[0]
-		firstLineEl := strings.Split(firstLine, " ")
-		if len(firstLineEl) > 1 {
-			path := firstLineEl[1]
-			if path == "/" {
-				sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
-			} else {
-				sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
-			}
-
-		}
+	if path == "/" {
+		fmt.Printf("Inside the root path")
+		sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
+	} else {
+		fmt.Printf("Inside the 404 path")
+		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
 	}
+
 	defer connection.Close()
 }
