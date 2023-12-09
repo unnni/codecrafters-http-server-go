@@ -48,8 +48,7 @@ func main() {
 			} else {
 				sendResponse("HTTP/1.1 404 Not Found\r\n\r\n", connection)
 			}
-			
-			}
+
 		}
 	}
 	defer connection.Close()
