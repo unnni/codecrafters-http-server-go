@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -33,9 +34,12 @@ func main() {
 	}
 
 	var requestBuffer []byte
-	connection.Read(requestBuffer)
-	requestBufferString := string(requestBuffer)
-	requestBufferLines := strings.Split(requestBufferString, "\r\n")
+	_, err = connection.Read(requestBuffer)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	requestBufferLines := strings.Split(string(requestBuffer), "\r\n")
 	startLine := requestBufferLines[0]
 	components := strings.Split(startLine, " ")
 	// method := components[0]
