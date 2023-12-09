@@ -9,7 +9,7 @@ import (
 )
 
 func sendResponse(response string, conn net.Conn) {
-	writeBuffer := []byte("HTTP/1.1 200 OK\r\n\r\n")
+	writeBuffer := []byte(response)
 	_, err := conn.Write(writeBuffer)
 
 	if err != nil {
