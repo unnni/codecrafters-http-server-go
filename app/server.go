@@ -29,5 +29,9 @@ func main() {
 		fmt.Println("Error sending response", err.Error())
 		os.Exit(1)
 	}
+
+	var requestBuffer []byte
+	connection.Read(requestBuffer)
+	fmt.Printf(string(requestBuffer))
 	defer connection.Close()
 }
