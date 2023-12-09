@@ -13,15 +13,21 @@ func main() {
 
 	// Uncomment this block to pass the first stage
 
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	connection, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
-
-	_, err = l.Accept()
+	defer connection.Close()
+	_, err = connection.Accept()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
+		os.Exit(1)
+	}
+	response := "HTTP/1.1 200 OK\r\n\r\n"
+	_, err := connection.Write([]byte(response))
+	if err != nil {
+		fmt.Println("Error sending response", err.Error())
 		os.Exit(1)
 	}
 }
