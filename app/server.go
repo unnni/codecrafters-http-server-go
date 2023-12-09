@@ -8,7 +8,7 @@ import (
 	// Uncomment this block to pass the first stage
 )
 
-func sendResponse(response string, conn net.Conn) {
+func sendResponse(response []byte, conn net.Conn) {
 	writeBuffer := []byte(response)
 	_, err := conn.Write(writeBuffer)
 
@@ -44,9 +44,9 @@ func main() {
 		if len(firstLineEl) > 1 {
 			path := firstLineEl[1]
 			if path == "/" {
-				sendResponse("HTTP/1.1 200 OK\r\n\r\n", connection)
+				sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
 			} else {
-				sendResponse("HTTP/1.1 404 Not Found\r\n\r\n", connection)
+				sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
 			}
 
 		}
