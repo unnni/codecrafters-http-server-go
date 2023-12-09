@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -16,6 +15,14 @@ func sendResponse(response []byte, conn net.Conn) {
 		fmt.Println("Error writing data on connection", err.Error())
 	}
 }
+
+func getUrlPath(buffer []byte, byteSize int) string {
+	httpRequest := strings.Split(string(buffer[:byteSize]), "\r\n")
+	httpStatus := httpRequest[0]
+	httpPath := strings.Split(httpStatus, " ")
+	return httpPath[1]
+}
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -33,23 +40,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	var requestBuffer []byte
-	_, err = connection.Read(requestBuffer)
+	buffer := make([]byte, 4096)
+
+	n, err := connection.Read(buffer)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Print("Failed to read contents of HTTP Request", err.Error())
+		os.Exit(1)
 	}
 
-	requestBufferLines := strings.Split(string(requestBuffer), "\r\n")
-	startLine := requestBufferLines[0]
-	components := strings.Split(startLine, " ")
-	// method := components[0]
-	path := components[1]
+	httpPath := getUrlPath(buffer, n)
 
-	if path == "/" {
-		fmt.Printf("Inside the root path")
+	if httpPath == "/" {
 		sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
 	} else {
-		fmt.Printf("Inside the 404 path")
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
 	}
 
