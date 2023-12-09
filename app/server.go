@@ -24,8 +24,8 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	response := "HTTP/1.1 200 OK\r\n\r\n"
-	_, err := connection.Write([]byte(response))
+	writeBuffer := []byte("HTTP/1.1 200 OK\r\n\r\n")
+	_, err = connection.Write([]byte(writeBuffer))
 	if err != nil {
 		fmt.Println("Error sending response", err.Error())
 		os.Exit(1)
