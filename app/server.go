@@ -38,7 +38,7 @@ func main() {
 	requestBufferLines := strings.Split(requestBufferString, "\r\n")
 	startLine := requestBufferLines[0]
 	components := strings.Split(startLine, " ")
-	method := components[0]
+	// method := components[0]
 	path := components[1]
 
 	if path == "/" {
