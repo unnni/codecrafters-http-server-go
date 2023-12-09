@@ -9,8 +9,7 @@ import (
 )
 
 func sendResponse(response []byte, conn net.Conn) {
-	writeBuffer := []byte(response)
-	_, err := conn.Write(writeBuffer)
+	_, err := conn.Write(response)
 
 	if err != nil {
 		fmt.Println("Error writing data on connection", err.Error())
