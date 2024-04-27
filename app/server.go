@@ -59,7 +59,7 @@ func main() {
 	} else if strings.HasPrefix(httpPath, "/echo/") {
 		text_string := strings.TrimPrefix(httpPath, "/echo/")
 		responseBody := fmt.Sprintf("%s\r\n\r\n", text_string)
-		responseBuffer := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(responseBody), responseBody))
+		responseBuffer := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n%s", len(responseBody), responseBody))
 		sendResponse(responseBuffer, connection)
 	} else {
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
