@@ -23,7 +23,8 @@ func getUrlPath(buffer []byte, byteSize int) string {
 	}
 	httpStatus := httpRequest[0]
 	httpPath := strings.Split(httpStatus, " ")
-
+	fmt.Println("getUrlPath-------->")
+	fmt.Println(httpPath)
 	return httpPath[1]
 }
 
@@ -55,11 +56,10 @@ func main() {
 
 	if httpPath == "/" {
 		sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
-	} else if httpPath == "/echo/" {
+	} else if strings.HasPrefix(httpPath, "/echo/") {
 		text_string := strings.TrimPrefix(httpPath, "/echo/")
 		responseBody := fmt.Sprintf("%s\r\n\r\n", text_string)
 		responseBuffer := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(responseBody), responseBody))
-		fmt.Println(responseBuffer)
 		sendResponse(responseBuffer, connection)
 	} else {
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
