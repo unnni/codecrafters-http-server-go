@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 	// Uncomment this block to pass the first stage
 )
@@ -57,10 +58,19 @@ func main() {
 	if httpPath == "/" {
 		sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), connection)
 	} else if strings.HasPrefix(httpPath, "/echo/") {
-		text_string := strings.TrimPrefix(httpPath, "/echo/")
-		responseBody := fmt.Sprintf("%s", text_string)
+		responseBody := strings.TrimPrefix(httpPath, "/echo/")
 		responseBuffer := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n\r\n", len(responseBody), responseBody))
 		sendResponse(responseBuffer, connection)
+	} else if strings.HasPrefix(httpPath, "/user-agent") {
+		pattern := `User-Agent: (.+?)(?:\r\n|$)`
+		regex := regexp.MustCompile(pattern)
+		req := string(buffer[:])
+		matches := regex.FindStringSubmatch(req)
+		if len(matches) > 1 {
+			content := matches[1]
+			responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(content), content)))
+			sendResponse(responseBuffer, connection)
+		}
 	} else {
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), connection)
 	}
