@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	// Uncomment this block to pass the first stage
@@ -27,7 +30,30 @@ func getUrlPath(buffer []byte, byteSize int) string {
 	return httpPath[1]
 }
 
-func handleConnection(conn net.Conn) {
+func readFile(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error", err)
+		return "", errors.New("Not Found")
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return "", err
+	}
+	fileSize := fileInfo.Size()
+	buffer := make([]byte, fileSize)
+	_, err = file.Read(buffer)
+	if err != nil {
+		fmt.Println("Error", err)
+		return "", err
+	}
+	return string(buffer), nil
+}
+
+func handleConnection(conn net.Conn, dir string) {
 	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
 	if err != nil {
@@ -51,6 +77,18 @@ func handleConnection(conn net.Conn) {
 			responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(content), content)))
 			sendResponse(responseBuffer, conn)
 		}
+	} else if strings.HasPrefix(httpPath, "/files/") {
+		filePath := strings.TrimPrefix(httpPath, "/files/")
+		fileContent, err := readFile(path.Join(dir, filePath))
+		if err != nil && err.Error() != "Not Found" {
+			return
+		} else if err != nil && err.Error() == "Not Found" {
+			sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), conn)
+		}
+
+		responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(fileContent), fileContent)))
+		sendResponse(responseBuffer, conn)
+
 	} else {
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), conn)
 	}
@@ -60,7 +98,10 @@ func handleConnection(conn net.Conn) {
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
-	// Uncomment this block to pass the first stage
+
+	var directory string
+	flag.StringVar(&directory, "directory", "", "path to file directory")
+	flag.Parse()
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
@@ -76,6 +117,6 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(connection)
+		go handleConnection(connection, directory)
 	}
 }
