@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,14 +21,16 @@ func sendResponse(response []byte, conn net.Conn) {
 	}
 }
 
-func getUrlPath(buffer []byte, byteSize int) string {
+func getUrlPath(buffer []byte, byteSize int) (string, string) {
 	httpRequest := strings.Split(string(buffer[:byteSize]), "\r\n")
 	for _, val := range httpRequest {
 		fmt.Println(val)
 	}
 	httpStatus := httpRequest[0]
 	httpPath := strings.Split(httpStatus, " ")
-	return httpPath[1]
+	fmt.Println("---------<><<>")
+	fmt.Println(httpPath)
+	return httpPath[0], httpPath[1]
 }
 
 func readFile(filePath string) (string, error) {
@@ -53,6 +56,13 @@ func readFile(filePath string) (string, error) {
 	return string(buffer), nil
 }
 
+func readRequestFile(buffer []byte, n int) []byte {
+	buffer = buffer[:n]
+	lines := bytes.Split(buffer, []byte("\r\n"))
+	fmt.Println("readRequestFile--=---------->>")
+	fmt.Println(string(lines[len(lines)-1]))
+	return lines[len(lines)-1]
+}
 func handleConnection(conn net.Conn, dir string) {
 	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
@@ -60,14 +70,19 @@ func handleConnection(conn net.Conn, dir string) {
 		fmt.Print("Failed to read contents of HTTP Request", err.Error())
 		os.Exit(1)
 	}
-	httpPath := getUrlPath(buffer, n)
+	httpMethod, httpPath := getUrlPath(buffer, n)
 	if httpPath == "/" {
+
 		sendResponse([]byte("HTTP/1.1 200 OK\r\n\r\n"), conn)
+
 	} else if strings.HasPrefix(httpPath, "/echo/") {
+
 		responseBody := strings.TrimPrefix(httpPath, "/echo/")
 		responseBuffer := []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s\r\n\r\n", len(responseBody), responseBody))
 		sendResponse(responseBuffer, conn)
+
 	} else if strings.HasPrefix(httpPath, "/user-agent") {
+
 		pattern := `User-Agent: (.+?)(?:\r\n|$)`
 		regex := regexp.MustCompile(pattern)
 		req := string(buffer[:])
@@ -77,17 +92,37 @@ func handleConnection(conn net.Conn, dir string) {
 			responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(content), content)))
 			sendResponse(responseBuffer, conn)
 		}
-	} else if strings.HasPrefix(httpPath, "/files/") {
-		filePath := strings.TrimPrefix(httpPath, "/files/")
-		fileContent, err := readFile(path.Join(dir, filePath))
-		if err != nil && err.Error() != "Not Found" {
-			return
-		} else if err != nil && err.Error() == "Not Found" {
-			sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), conn)
-		}
 
-		responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(fileContent), fileContent)))
-		sendResponse(responseBuffer, conn)
+	} else if strings.HasPrefix(httpPath, "/files/") {
+
+		if httpMethod == "GET" {
+			filePath := strings.TrimPrefix(httpPath, "/files/")
+			fileContent, err := readFile(path.Join(dir, filePath))
+			if err != nil && err.Error() != "Not Found" {
+				return
+			} else if err != nil && err.Error() == "Not Found" {
+				sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), conn)
+			}
+
+			responseBuffer := ([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(fileContent), fileContent)))
+			sendResponse(responseBuffer, conn)
+		} else if httpMethod == "POST" {
+			fileName := strings.TrimPrefix(httpPath, "/files/")
+			file, err := os.Create(path.Join(dir, fileName))
+			fileContent := readRequestFile(buffer, n)
+			if err != nil {
+				return
+			}
+			defer file.Close()
+			_, err = file.Write(fileContent)
+
+			if err != nil {
+				fmt.Println("Error writing to file: ", err.Error())
+				os.Exit(1)
+			}
+			responseBuffer := []byte("HTTP/1.1 201 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: 0\r\n\r\n")
+			sendResponse(responseBuffer, conn)
+		}
 
 	} else {
 		sendResponse([]byte("HTTP/1.1 404 Not Found\r\n\r\n"), conn)
